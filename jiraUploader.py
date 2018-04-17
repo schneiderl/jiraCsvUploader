@@ -45,7 +45,7 @@ def parse_request():
 			project, subtaskOf, title, description, issueType, storyPoints, hours, labels= row.split(';')
 			if(counter!=0):
  				#post the new issue
- 				data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType},"customfield_10013":storyPoints, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "labels":[labels]}}
+ 				data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "labels":[labels]}}
  				print(data)
  				r = requests.post('https://sapjira.wdf.sap.corp/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
  				print(r)
