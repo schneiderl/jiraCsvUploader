@@ -42,7 +42,7 @@ def parse_request():
 		for row in lines:
 			print(row)
 
-			project, subtaskOf, title, description, issueType, storyPoints, hours, labels= row.split(';')
+			project, subtaskOf, title, description, issueType, hours, labels= row.split(';')
 			if(counter!=0):
  				#post the new issue
  				data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "labels":[labels]}}
