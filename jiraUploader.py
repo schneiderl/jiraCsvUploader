@@ -24,15 +24,15 @@ def parse_request():
 		return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
 	#file = request.files['file']
 	
-	r = __get_auth_from_request()
+	r = _get_auth_from_request()
 	if(r.status_code==200):
-		authenticatedHeader = __authenticate_header(r)
+		authenticatedHeader = _authenticate_header(r)
 		read = request.data.decode('utf-8')
 		
 		lines = read.splitlines() #no good
 		for row in lines[1:]:
 			print(row)
-			r = __post_issue(row, authenticatedHeader)
+			r = _post_issue(row, authenticatedHeader)
 			print(r)
  				
 	elif (r.status_code==403):
@@ -60,9 +60,6 @@ def _authenticate_header(auth_response):
 	sessionJson = json.loads(auth_response.text)
 	sessionId = sessionJson['session']['name'] + "=" + sessionJson['session']['value']
 	return {'Content-Type': 'application/json', 'Accept':'application/json', 'cookie': sessionId}
-
-if __name__ == 'jiraUploader':
-	print('do auth')
 
 @app.route('/')
 def hello_world():
