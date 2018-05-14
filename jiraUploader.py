@@ -24,40 +24,42 @@ def parse_request():
 		return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
 	#file = request.files['file']
 	
-	
-	username = request.authorization['username']
-	password = request.authorization['password']
-	headers = { 'Content-Type': 'application/json', 'Accept':'application/json'}
-	data = {'username': username, 'password':password}
-	r = requests.post('https://sapjira.wdf.sap.corp/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False)
+	r = __get_auth_from_request()
 	if(r.status_code==200):
-		sessionJson = json.loads(r.text)
-		sessionId = sessionJson['session']['name'] + "=" + sessionJson['session']['value']
-		authenticatedHeader = {'Content-Type': 'application/json', 'Accept':'application/json', 'cookie': sessionId}
+		authenticatedHeader = __authenticate_header(r)
 		read = request.data.decode('utf-8')
 		
-
 		lines = read.splitlines() #no good
-		counter = 0
-		for row in lines:
+		for row in lines[1:]:
 			print(row)
-
-			project, subtaskOf, title, description, issueType, hours, labels= row.split(';')
-			if(counter!=0):
- 				#post the new issue
- 				data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "labels":[labels]}}
- 				print(data)
- 				r = requests.post('https://sapjira.wdf.sap.corp/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
- 				print(r)
-			counter = counter+1
+			r = __post_issue(row, authenticatedHeader)
+			print(r)
  				
 	elif (r.status_code==403):
 		abort(403)
 	else:
 		abort(403)
 
-	return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
+	return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
+def __post_issue(issue_row, authenticatedHeader):
+	project, subtaskOf, title, description, issueType, hours, labels= issue_row.split(';')
+	#post the new issue
+	data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "labels":[labels]}}
+	print(data)
+	r = requests.post('https://sapjira.wdf.sap.corp/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
+
+def __get_auth_from_request():
+	username = request.authorization['username']
+	password = request.authorization['password']
+	headers = { 'Content-Type': 'application/json', 'Accept':'application/json'}
+	data = {'username': username, 'password':password}
+	return requests.post('https://sapjira.wdf.sap.corp/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False)
+
+def __authenticate_header(auth_response):
+	sessionJson = json.loads(auth_response.text)
+	sessionId = sessionJson['session']['name'] + "=" + sessionJson['session']['value']
+	return {'Content-Type': 'application/json', 'Accept':'application/json', 'cookie': sessionId}
 
 @app.route('/')
 def hello_world():
