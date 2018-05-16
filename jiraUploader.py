@@ -194,7 +194,6 @@ def get_open_issues():
 			#row_values.append(timespent)
 			row_values.append(','.join(labels))
 			row = ';'.join(row_values)
-			str(row).encode('utf-8')
 			csv.write(row + ';\n')
 		csv.close()
 
