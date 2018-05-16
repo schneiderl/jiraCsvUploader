@@ -43,9 +43,9 @@ def parse_request():
 	return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
 def _post_issue(issue_row, authenticatedHeader):
-	project, subtaskOf, title, description, issueType, hours, labels= issue_row.split(';')
+	project, subtaskOf, title, description, issueType, hours, duedate, labels= issue_row.split(';')
 	#post the new issue
-	data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "labels":[labels]}}
+	data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "duedate":duedate, "labels":[labels]}}
 	print(data)
 	r = requests.post('https://sapjira.wdf.sap.corp/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
 
