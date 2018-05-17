@@ -15,16 +15,17 @@ import getpass
 import logging
 
 logging.basicConfig(level=logging.INFO)
-app = Flask(__name__)
-api = Api(app)
-CORS(app)
+_app = Flask(__name__)
+_api = Api(_app)
+CORS(_app)
 warnings.filterwarnings("ignore") #just during prototype phase
 port = int(os.getenv("PORT", 9099))
-global authenticatedHeader
+global _authenticatedHeader
+global _data
 global JIRA_URL
 
-@app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
-def parse_request():
+@_app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
+def _parse_request():
 	
 	if request.method=='OPTIONS':
 		return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
@@ -32,8 +33,8 @@ def parse_request():
 	
 	r = _get_auth_from_request()[1]
 	if(r.status_code==200):
-		global authenticatedHeader
-		authenticatedHeader = _authenticate_header(r)
+		global _authenticatedHeader
+		_authenticatedHeader = _authenticate_header(r)
 		read = request.data.decode('utf-8')
 		
 		lines = read.splitlines() #no good
@@ -54,7 +55,7 @@ def _post_issue(issue_row):
 	#post the new issue
 	data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "duedate":duedate, "labels":[labels]}}
 	logging.info('JSON sent:', data)
-	r = requests.post(JIRA_URL + '/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
+	r = requests.post(JIRA_URL + '/rest/api/2/issue', data=json.dumps(data), headers=_authenticatedHeader, verify=False)
 
 def _get_auth_from_request():
 	username = request.authorization['username']
@@ -94,7 +95,7 @@ def _get_config():
 	return username, password, project
 
 def get_issue_by_key(key):
-	r = requests.get(JIRA_URL + '/rest/api/2/issue/' + key, data=json.dumps(data), headers=authenticatedHeader, verify=False)
+	r = requests.get(JIRA_URL + '/rest/api/2/issue/' + key, data=json.dumps(data), headers=_authenticatedHeader, verify=False)
 	if (r.status_code==200):
 		issueJson = json.loads(r.text)
 		title = issueJson['fields']['summary']
@@ -115,7 +116,7 @@ def get_open_issues():
 	#aggregatetimespent or timespent
 	#workratio
 
-	r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql + '&fields=' + fields, data=json.dumps(data), headers=authenticatedHeader, verify=False)
+	r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql + '&fields=' + fields, data=json.dumps(_data), headers=_authenticatedHeader, verify=False)
 	if (r.status_code==200):
 		issuesJson = json.loads(r.text)
 		issues = issuesJson['issues']
@@ -209,16 +210,18 @@ def upload_issues(filename):
 	else:
 		logging.error('file must be CSV')
 
+def run_host():
+	_app.run(host='0.0.0.0', port=port)
 
-@app.route('/')
-def hello_world():
+@_app.route('/')
+def _hello_world():
     return 'fala queridos'
 
 if __name__ == 'jiraUploader':
-	global authenticatedHeader
-	global data
-	data, authenticatedHeader = _auth()
+	global _authenticatedHeader
+	global _data
+	_data, _authenticatedHeader = _auth()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=port)	
+    _app.run(host='0.0.0.0', port=port)	
 
