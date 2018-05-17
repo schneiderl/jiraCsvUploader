@@ -30,16 +30,17 @@ def parse_request():
 		return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
 	#file = request.files['file']
 	
-	r = _get_auth_from_request()
+	r = _get_auth_from_request()[1]
 	if(r.status_code==200):
+		global authenticatedHeader
 		authenticatedHeader = _authenticate_header(r)
 		read = request.data.decode('utf-8')
 		
 		lines = read.splitlines() #no good
 		for row in lines[1:]:
-			print(row)
-			r = _post_issue(row, authenticatedHeader)
-			print(r)
+			logging.info(row)
+			r = _post_issue(row)
+			logging.info(r)
  				
 	elif (r.status_code==403):
 		abort(403)
@@ -48,12 +49,12 @@ def parse_request():
 
 	return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
-def _post_issue(issue_row, authenticatedHeader):
+def _post_issue(issue_row):
 	project, subtaskOf, title, description, issueType, hours, duedate, labels= issue_row.split(';')
 	#post the new issue
 	data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "duedate":duedate, "labels":[labels]}}
-	print(data)
-	r = requests.post('https://sapjira.wdf.sap.corp/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
+	logging.info('JSON sent:', data)
+	r = requests.post(JIRA_URL + '/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
 
 def _get_auth_from_request():
 	username = request.authorization['username']
@@ -63,7 +64,7 @@ def _get_auth_from_request():
 def _post_auth(username, password):
 	headers = { 'Content-Type': 'application/json', 'Accept':'application/json'}
 	data = {'username': username, 'password':password}
-	return data, requests.post('https://sapjira.wdf.sap.corp/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False)
+	return data, requests.post(JIRA_URL + '/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False)
 
 def _authenticate_header(auth_response):
 	sessionJson = json.loads(auth_response.text)
@@ -97,7 +98,7 @@ def get_issue_by_key(key):
 	if (r.status_code==200):
 		issueJson = json.loads(r.text)
 		title = issueJson['fields']['summary']
-		logging.info('	Title: ' + title)
+		print('Title: ' + title)
 	elif(r.status_code==404):
 		logging.error('Issue not found')
 
@@ -196,6 +197,18 @@ def get_open_issues():
 			row = ';'.join(row_values)
 			csv.write(row + ';\n')
 		csv.close()
+
+def upload_issues(filename):
+	if filename.endswith('.csv'):
+		with open(filename, 'r') as csvfile:
+			csv_lines = list(csv.reader(csvfile, delimiter=';'))
+			for row in csv_lines[1:]:
+				logging.info('csv row:', row)
+				r = _post_issue(";".join(row))
+				logging.info('return code:',r)
+	else:
+		logging.error('file must be CSV')
+
 
 @app.route('/')
 def hello_world():
