@@ -16,7 +16,6 @@ from jiraCommands import _post_auth
 from jiraCommands import _auth
 import logging
 
-
 logging.basicConfig(level=logging.INFO)
 _app = Flask(__name__)
 _api = Api(_app)
