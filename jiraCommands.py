@@ -12,11 +12,13 @@ warnings.filterwarnings("ignore") #just during prototype phase
 global _authenticatedHeader
 global _data
 global JIRA_URL
+#App needs to get endpoint too
+JIRA_URL = 'https://sapjira.wdf.sap.corp'
 
 def _post_issue(issue_row):
-	project, subtaskOf, title, description, issueType, hours, duedate, labels= issue_row.split(';')
+	project, subtaskOf, title, description, issueType, hours, priority, labels= issue_row.split(';')
 	#post the new issue
-	data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "duedate":duedate, "labels":[labels]}}
+	data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "priority":{"id": priority}, "labels":[labels]}}
 	logging.info('JSON sent:', data)
 	r = requests.post(JIRA_URL + '/rest/api/2/issue', data=json.dumps(data), headers=_authenticatedHeader, verify=False)
 

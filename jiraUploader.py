@@ -24,7 +24,6 @@ warnings.filterwarnings("ignore") #just during prototype phase
 port = int(os.getenv("PORT", 9099))
 global _authenticatedHeader
 global _data
-global JIRA_URL
 
 @_app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
 def _parse_request():
@@ -57,17 +56,9 @@ def _get_auth_from_request():
 	password = request.authorization['password']
 	return _post_auth(username, password)
 
-def run_host():
-	_app.run(host='0.0.0.0', port=port)
-
 @_app.route('/')
 def _hello_world():
     return 'fala queridos'
-
-if __name__ == 'jiraUploader':
-	global _authenticatedHeader
-	global _data
-	_data, _authenticatedHeader = _auth()
 
 if __name__ == '__main__':
     _app.run(host='0.0.0.0', port=port)	
