@@ -43,9 +43,6 @@ def _parse_request():
 			logging.info(row)
 			r = _post_issue(row)
 			logging.info(r)
- 				
-	elif (r.status_code==403):
-		abort(403)
 	else:
 		abort(403)
 
@@ -56,9 +53,6 @@ def _get_auth_from_request():
 	password = request.authorization['password']
 	return _post_auth(username, password)
 
-@_app.route('/')
-def _hello_world():
-    return 'fala queridos'
 
 if __name__ == '__main__':
     _app.run(host='0.0.0.0', port=port)	
