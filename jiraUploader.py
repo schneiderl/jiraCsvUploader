@@ -10,59 +10,56 @@ import base64
 import csv
 import warnings
 from flask_cors import CORS
+from jiraCommands import _post_issue
+from jiraCommands import _authenticate_header
+from jiraCommands import _post_auth
+from jiraCommands import _auth
+import logging
 
-app = Flask(__name__)
-api = Api(app)
-CORS(app)
+logging.basicConfig(level=logging.INFO)
+_app = Flask(__name__)
+_api = Api(_app)
+CORS(_app)
 warnings.filterwarnings("ignore") #just during prototype phase
 port = int(os.getenv("PORT", 9099))
+global _authenticatedHeader
+global _data
 
-@app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
-def parse_request():
+@_app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
+def _parse_request():
 	
 	if request.method=='OPTIONS':
 		return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
 	#file = request.files['file']
 	
-	
-	username = request.authorization['username']
-	password = request.authorization['password']
-	headers = { 'Content-Type': 'application/json', 'Accept':'application/json'}
-	data = {'username': username, 'password':password}
-	r = requests.post('https://sapjira.wdf.sap.corp/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False)
+	r = _get_auth_from_request()[1]
 	if(r.status_code==200):
-		sessionJson = json.loads(r.text)
-		sessionId = sessionJson['session']['name'] + "=" + sessionJson['session']['value']
-		authenticatedHeader = {'Content-Type': 'application/json', 'Accept':'application/json', 'cookie': sessionId}
+		global _authenticatedHeader
+		_authenticatedHeader = _authenticate_header(r)
 		read = request.data.decode('utf-8')
 		
-
 		lines = read.splitlines() #no good
-		counter = 0
-		for row in lines:
-			print(row)
-
-			project, subtaskOf, title, description, issueType, hours, labels= row.split(';')
-			if(counter!=0):
- 				#post the new issue
- 				data = { "fields": {"project":{ "key": project}, "parent":{"key": subtaskOf}, "summary": title,"description": description, "issuetype": {"id": issueType}, "timetracking":{"originalEstimate":hours, "remainingEstimate":hours}, "labels":[labels]}}
- 				print(data)
- 				r = requests.post('https://sapjira.wdf.sap.corp/rest/api/2/issue', data=json.dumps(data), headers=authenticatedHeader, verify=False)
- 				print(r)
-			counter = counter+1
+		for row in lines[1:]:
+			logging.info(row)
+			r = _post_issue(row)
+			logging.info(r)
  				
 	elif (r.status_code==403):
 		abort(403)
 	else:
 		abort(403)
 
-	return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
+	return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
+def _get_auth_from_request():
+	username = request.authorization['username']
+	password = request.authorization['password']
+	return _post_auth(username, password)
 
-@app.route('/')
-def hello_world():
+@_app.route('/')
+def _hello_world():
     return 'fala queridos'
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=port)	
+    _app.run(host='0.0.0.0', port=port)	
 
