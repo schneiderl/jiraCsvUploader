@@ -1,19 +1,14 @@
 from flask import Flask
 import os
-from flask_restful import Resource, Api
+from flask_restful import Api
 from flask import request
-from flask.json import jsonify
 from flask import abort
-import requests
 import json
-import base64
-import csv
 import warnings
 from flask_cors import CORS
 from jiraCommands import _post_issue
 from jiraCommands import _authenticate_header
 from jiraCommands import _post_auth
-from jiraCommands import _auth
 import logging
 
 logging.basicConfig(level=logging.INFO)

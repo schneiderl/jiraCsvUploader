@@ -1,6 +1,5 @@
 import requests
 import json
-import base64
 import csv
 import warnings
 import configparser
