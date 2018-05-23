@@ -20,7 +20,6 @@ port = int(os.getenv("PORT", 9099))
 global _authenticatedHeader
 global _data
 
-
 @_app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
 def _parse_request():
 
@@ -49,6 +48,15 @@ def _get_auth_from_request():
     username = request.authorization['username']
     password = request.authorization['password']
     return _post_auth(username, password)
+
+
+
+@_app.route('/api/authenticate', methods=['POST', 'OPTIONS'])
+def _authenticate():
+    if request.method == 'OPTIONS':
+        json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+    #TO_DO: Authenticate and save the session
+
 
 
 if __name__ == '__main__':
