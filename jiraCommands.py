@@ -5,6 +5,7 @@ import warnings
 import configparser
 import getpass
 import logging
+from flask import abort
 
 logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")  # just during prototype phase
@@ -16,28 +17,28 @@ JIRA_URL = 'https://sapjira.wdf.sap.corp'
 
 
 def _post_issue(issue_row):
-    project, subtaskOf, title, description, issueType, hours, priority, labels = issue_row.split(
+    project, subtaskOf, title, description, issueType, hours, priority, labels = issue_row.split( # noqa
         ';')
     # post the new issue
-    data = {"fields": {"project": {"key": project}, "parent": {"key": subtaskOf}, "summary": title, "description": description, "issuetype": {
-        "id": issueType}, "timetracking": {"originalEstimate": hours, "remainingEstimate": hours}, "priority": {"id": priority}, "labels": [labels]}}
+    data = {"fields": {"project": {"key": project}, "parent": {"key": subtaskOf}, "summary": title, "description": description, "issuetype": { # noqa
+        "id": issueType}, "timetracking": {"originalEstimate": hours, "remainingEstimate": hours}, "priority": {"id": priority}, "labels": [labels]}} # noqa
     logging.info('JSON sent:', data)
-    r = requests.post(JIRA_URL + '/rest/api/2/issue',
-                      data=json.dumps(data), headers=_authenticatedHeader, verify=False)
+    r = requests.post(JIRA_URL + '/rest/api/2/issue', # noqa
+                      data=json.dumps(data), headers=_authenticatedHeader, verify=False) # noqa
 
 
 def _post_auth(username, password):
     headers = {'Content-Type': 'application/json',
                'Accept': 'application/json'}
     data = {'username': username, 'password': password}
-    return data, requests.post(JIRA_URL + '/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False)
+    return data, requests.post(JIRA_URL + '/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False) # noqa
 
 
 def _authenticate_header(auth_response):
     sessionJson = json.loads(auth_response.text)
     sessionId = sessionJson['session']['name'] + \
         "=" + sessionJson['session']['value']
-    return {'Content-Type': 'application/json', 'Accept': 'application/json', 'cookie': sessionId}
+    return {'Content-Type': 'application/json', 'Accept': 'application/json', 'cookie': sessionId} # noqa
 
 
 def _auth():
@@ -69,7 +70,7 @@ def _get_config():
 
 def get_issue_by_key(key):
     r = requests.get(JIRA_URL + '/rest/api/2/issue/' + key,
-                     data=json.dumps(data), headers=_authenticatedHeader, verify=False)
+                     data=json.dumps(data), headers=_authenticatedHeader, verify=False) # noqa
     if (r.status_code == 200):
         issueJson = json.loads(r.text)
         title = issueJson['fields']['summary']
@@ -86,15 +87,15 @@ def get_open_issues():
         project = input('Project:')
 
     jql = 'project%20%3D%20' + project + \
-        '%20AND%20issuetype%20in%20subTaskIssueTypes()%20AND%20status%20in%20(Open%2C%20Reopened%2C%20%22In%20Progress%22%2C%20Blocked)'
-    fields = 'parent,summary,description,assignee,issuetype,status,aggregatetimeestimate,aggregatetimespent,duedate,labels'
+        '%20AND%20issuetype%20in%20subTaskIssueTypes()%20AND%20status%20in%20(Open%2C%20Reopened%2C%20%22In%20Progress%22%2C%20Blocked)' # noqa
+    fields = 'parent,summary,description,assignee,issuetype,status,aggregatetimeestimate,aggregatetimespent,duedate,labels' # noqa
     # aggregatetimeoriginalestimate or timeestimate or aggregatetimeestimate?
-    #aggregateprogress or progress
-    #aggregatetimespent or timespent
+    # aggregateprogress or progress
+    # aggregatetimespent or timespent
     # workratio
 
     r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql + '&fields=' +
-                     fields, data=json.dumps(_data), headers=_authenticatedHeader, verify=False)
+                     fields, data=json.dumps(_data), headers=_authenticatedHeader, verify=False) # noqa
     if (r.status_code == 200):
         issuesJson = json.loads(r.text)
         issues = issuesJson['issues']
@@ -122,7 +123,7 @@ def get_open_issues():
             print('Backlog: ' + backlog)
             print('Title: ' + title)
 
-            if (issue['fields']['description'] != None):
+            if (issue['fields']['description'] is not None):
                 description = issue['fields']['description']
                 print('Description: ' + description)
             else:
@@ -138,7 +139,7 @@ def get_open_issues():
             # status = issue['fields']['status']['name']
             # print('Status: : ' + status)
 
-            if (issue['fields']['aggregatetimeestimate'] != None):
+            if (issue['fields']['aggregatetimeestimate'] is not None):
                 estimatetime = str(issue['fields']['aggregatetimeestimate'])
                 print('Aggregate time estimate: ' + estimatetime)
             else:
@@ -149,9 +150,7 @@ def get_open_issues():
             # 	print('Aggregate time spent: ' + timespent)
             # else: timespent = ''
 
-            #if (issue['fields']['workratio']!=None): print('Work ratio: ' + issue['fields']['workratio'])
-
-            if (issue['fields']['duedate'] != None):
+            if (issue['fields']['duedate'] is not None):
                 duedate = issue['fields']['duedate']
                 print('Duedate: ', duedate)
             else:
@@ -191,6 +190,7 @@ def upload_issues(filename):
                 logging.info('return code:', r)
     else:
         logging.error('file must be CSV')
+
 
 if __name__ == '__main__':
     global _authenticatedHeader

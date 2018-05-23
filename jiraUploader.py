@@ -20,12 +20,13 @@ port = int(os.getenv("PORT", 9099))
 global _authenticatedHeader
 global _data
 
+
 @_app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
 def _parse_request():
 
     if request.method == 'OPTIONS':
-        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
-    #file = request.files['file']
+        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'} # noqa
+    # file = request.files['file']
 
     r = _get_auth_from_request()[1]
     if(r.status_code == 200):
@@ -41,7 +42,7 @@ def _parse_request():
     else:
         abort(403)
 
-    return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+    return json.dumps({'success': True}), 200, {'ContentType': 'application/json'} # noqa
 
 
 def _get_auth_from_request():
@@ -50,13 +51,11 @@ def _get_auth_from_request():
     return _post_auth(username, password)
 
 
-
 @_app.route('/api/authenticate', methods=['POST', 'OPTIONS'])
 def _authenticate():
     if request.method == 'OPTIONS':
         json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
-    #TO_DO: Authenticate and save the session
-
+    # TO_DO: Authenticate and save the session
 
 
 if __name__ == '__main__':
