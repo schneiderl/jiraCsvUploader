@@ -7,11 +7,12 @@ import getpass
 import logging
 from flask import abort
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 warnings.filterwarnings("ignore")  # just during prototype phase
 global _authenticatedHeader
 global _data
 global JIRA_URL
+global PROJECT
 # App needs to get endpoint too
 JIRA_URL = 'https://sapjira.wdf.sap.corp'
 
@@ -22,6 +23,15 @@ def _post_issue(issue_row):
     # post the new issue
     data = {"fields": {"project": {"key": project}, "parent": {"key": subtaskOf}, "summary": title, "description": description, "issuetype": { # noqa
         "id": issueType}, "timetracking": {"originalEstimate": hours, "remainingEstimate": hours}, "priority": {"id": priority}, "labels": [labels]}} # noqa
+    logging.debug('JSON sent:' + json.dumps(data))
+    return requests.post(JIRA_URL + '/rest/api/2/issue', # noqa
+                      data=json.dumps(data), headers=_authenticatedHeader, verify=False) # noqa
+
+def _post_backlog(issue_row):
+    project, title, issueType = issue_row.split( ';')
+    # post the new issue
+    data = {"fields": {"project": {"key": PROJECT}, "summary": title, "issuetype": { # noqa
+        "id": issueType}}} # noqa
     logging.debug('JSON sent:' + json.dumps(data))
     return requests.post(JIRA_URL + '/rest/api/2/issue', # noqa
                       data=json.dumps(data), headers=_authenticatedHeader, verify=False) # noqa
@@ -42,7 +52,7 @@ def _authenticate_header(auth_response):
 
 
 def _auth():
-    username, password, project = _get_config()
+    username, password = _get_config()
     data, auth_response = _post_auth(username, password)
     if (auth_response.status_code == 200):
         logging.info('authenticated')
@@ -55,17 +65,18 @@ def _get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
     global JIRA_URL
+    global PROJECT
     username = config.get('jira', 'username')
     password = config.get('jira', 'password')
-    project = config.get('jira', 'project')
+    PROJECT = config.get('jira', 'project')
     JIRA_URL = config.get('endpoints', 'jira')
     if (username == ''):
         username = str(input('Username:'))
     if (password == ''):
         password = str(getpass.getpass('Password:'))
-    if (project == ''):
-        project = input('Project:')
-    return username, password, project
+    if (PROJECT == ''):
+        PROJECT = input('Project:')
+    return username, password
 
 
 def get_issue_by_key(key):
@@ -80,13 +91,7 @@ def get_issue_by_key(key):
 
 
 def get_open_issues():
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    project = config.get('jira', 'project')
-    if (project == ''):
-        project = input('Project:')
-
-    jql = 'project%20%3D%20' + project + \
+    jql = 'project%20%3D%20' + PROJECT + \
         '%20AND%20issuetype%20in%20subTaskIssueTypes()%20AND%20status%20in%20(Open%2C%20Reopened%2C%20%22In%20Progress%22%2C%20Blocked)' # noqa
     fields = 'parent,summary,description,assignee,issuetype,status,aggregatetimeestimate,aggregatetimespent,duedate,labels' # noqa
     # aggregatetimeoriginalestimate or timeestimate or aggregatetimeestimate?
@@ -188,9 +193,29 @@ def upload_issues(filename):
                 logging.info('csv row:' + ";".join(row))
                 r = _post_issue(";".join(row))
                 if (r.status_code == 200 or r.status_code == 201):
-                    logging.info('Issue sucesfully created')
+                    logging.info('Issue successfully created')
                 else:
                     logging.error('Issue not created: ' + str(r))
+    else:
+        logging.error('file must be CSV')
+
+def upload_backlogs(filename):
+    if filename.endswith('.csv'):
+        with open(filename, 'r') as csvfile:
+            csv_lines = list(csv.reader(csvfile, delimiter=';'))
+            backlog_ids = []
+            for row in csv_lines[1:]:
+                logging.info('csv row:' + ";".join(row))
+                r = _post_backlog(";".join(row))
+                if (r.status_code == 200 or r.status_code == 201):
+                    logging.info('Backlog successfully created')
+                    jsonResponse = json.loads(r.text)
+                    backlog_ids.append(jsonResponse['key'])
+                    logging.debug('JSON Response: ' + json.dumps(jsonResponse))
+                else:
+                    logging.error('Issue not created: ' + str(r))
+            print()
+            print(*backlog_ids, sep = "\n")
     else:
         logging.error('file must be CSV')
 
