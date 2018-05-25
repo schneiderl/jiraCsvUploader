@@ -187,7 +187,10 @@ def upload_issues(filename):
             for row in csv_lines[1:]:
                 logging.info('csv row:' + ";".join(row))
                 r = _post_issue(";".join(row))
-                logging.info('Response:' + r)
+                if (r.status_code == 200 or r.status_code == 201):
+                    logging.info('Issue sucesfully created')
+                else:
+                    logging.error('Issue not created: ' + str(r))
     else:
         logging.error('file must be CSV')
 
