@@ -22,8 +22,8 @@ def _post_issue(issue_row):
     # post the new issue
     data = {"fields": {"project": {"key": project}, "parent": {"key": subtaskOf}, "summary": title, "description": description, "issuetype": { # noqa
         "id": issueType}, "timetracking": {"originalEstimate": hours, "remainingEstimate": hours}, "priority": {"id": priority}, "labels": [labels]}} # noqa
-    logging.info('JSON sent:', data)
-    r = requests.post(JIRA_URL + '/rest/api/2/issue', # noqa
+    logging.debug('JSON sent:' + json.dumps(data))
+    return requests.post(JIRA_URL + '/rest/api/2/issue', # noqa
                       data=json.dumps(data), headers=_authenticatedHeader, verify=False) # noqa
 
 
@@ -185,14 +185,14 @@ def upload_issues(filename):
         with open(filename, 'r') as csvfile:
             csv_lines = list(csv.reader(csvfile, delimiter=';'))
             for row in csv_lines[1:]:
-                logging.info('csv row:', row)
+                logging.info('csv row:' + ";".join(row))
                 r = _post_issue(";".join(row))
-                logging.info('return code:', r)
+                logging.info('Response:' + r)
     else:
         logging.error('file must be CSV')
 
 
-if __name__ == '__main__':
+if __name__ == 'jiraCommands':
     global _authenticatedHeader
     global _data
     _data, _authenticatedHeader = _auth()
