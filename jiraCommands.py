@@ -7,8 +7,8 @@ import getpass
 import logging
 from flask import abort
 
-logging.basicConfig(level=logging.DEBUG)
-warnings.filterwarnings("ignore")  # just during prototype phase
+logging.basicConfig(level=logging.INFO)
+warnings.filterwarnings('ignore')  # just during prototype phase
 global _authenticatedHeader
 global _data
 global JIRA_URL
@@ -20,18 +20,15 @@ JIRA_URL = 'https://sapjira.wdf.sap.corp'
 def _post_issue(issue_row):
 	project, subtaskOf, title, description, issueType, hours, priority, labels = issue_row.split( # noqa
 		';')
-
-	# post the new issue
-	data = {"fields": {"project": {"key": project}, "parent": {"key": subtaskOf}, "summary": title, "description": description, "issuetype": { # noqa
-		"id": issueType}, "timetracking": {"originalEstimate": hours, "remainingEstimate": hours}, "priority": {"id": priority}, "labels": [labels]}} # noqa
+	data = {'fields': {'project': {'key': project}, 'parent': {'key': subtaskOf}, 'summary': title, 'description': description, 'issuetype': { # noqa
+		'id': issueType}, 'timetracking': {'originalEstimate': hours, 'remainingEstimate': hours}, 'priority': {'id': priority}, 'labels': [labels]}} # noqa
 	logging.debug('JSON sent:' + json.dumps(data))
 	return requests.post(JIRA_URL + '/rest/api/2/issue', # noqa
 					  data=json.dumps(data), headers=_authenticatedHeader, verify=False) # noqa
 
 def _post_backlog(title):
-	# post the new issue
-	data = {"fields": {"project": {"key": PROJECT}, "summary": title, "issuetype": { # noqa
-		"id": "6"}}} # noqa
+	data = {'fields': {'project': {'key': PROJECT}, 'summary': title, 'issuetype': { # noqa
+		'id': '6'}}} # noqa
 	logging.debug('JSON sent:' + json.dumps(data))
 	return requests.post(JIRA_URL + '/rest/api/2/issue', # noqa
 					  data=json.dumps(data), headers=_authenticatedHeader, verify=False) # noqa
@@ -47,7 +44,7 @@ def _post_auth(username, password):
 def _authenticate_header(auth_response):
 	sessionJson = json.loads(auth_response.text)
 	sessionId = sessionJson['session']['name'] + \
-		"=" + sessionJson['session']['value']
+		'=' + sessionJson['session']['value']
 	return {'Content-Type': 'application/json', 'Accept': 'application/json', 'cookie': sessionId} # noqa
 
 
@@ -107,100 +104,6 @@ def get_backlog_key_by_summary(title):
 	elif(r.status_code == 404):
 		logging.error('Issue not found')
 
-def get_open_issues():
-	jql = 'project%20%3D%20' + PROJECT + \
-		'%20AND%20issuetype%20in%20subTaskIssueTypes()%20AND%20status%20in%20(Open%2C%20Reopened%2C%20%22In%20Progress%22%2C%20Blocked)' # noqa
-	fields = 'parent,summary,description,assignee,issuetype,status,aggregatetimeestimate,aggregatetimespent,duedate,labels' # noqa
-	# aggregatetimeoriginalestimate or timeestimate or aggregatetimeestimate?
-	# aggregateprogress or progress
-	# aggregatetimespent or timespent
-	# workratio
-
-	r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql + '&fields=' +
-					 fields, data=json.dumps(_data), headers=_authenticatedHeader, verify=False) # noqa
-	if (r.status_code == 200):
-		issuesJson = json.loads(r.text)
-		issues = issuesJson['issues']
-
-		csv = open('open_tasks.csv', 'w')
-
-		listTitles = []
-		listTitles.append('Project')
-		listTitles.append('Backlog')
-		listTitles.append('Title')
-		listTitles.append('Description')
-		listTitles.append('issueType')
-		# listTitles.append('Assignee')
-		# listTitles.append('Status')
-		listTitles.append('EstimatedHours')
-		listTitles.append('DueDate')
-		# listTitles.append('TimeSpent')
-		listTitles.append('Labels')
-		columnTitles = ';'.join(listTitles) + ';\n'
-		csv.write(columnTitles)
-
-		for issue in issues:
-			backlog = issue['fields']['parent']['fields']['summary']
-			title = issue['fields']['summary']
-			print('Backlog: ' + backlog)
-			print('Title: ' + title)
-
-			if (issue['fields']['description'] is not None):
-				description = issue['fields']['description']
-				print('Description: ' + description)
-			else:
-				description = ''
-
-			issueType = issue['fields']['issuetype']['id']
-
-			# if (issue['fields']['assignee']!=None):
-			# 	assignee = issue['fields']['assignee']['displayName']
-			# 	print('Assignee: ' + assignee)
-			# else: assignee = ''
-
-			# status = issue['fields']['status']['name']
-			# print('Status: : ' + status)
-
-			if (issue['fields']['aggregatetimeestimate'] is not None):
-				estimatetime = str(issue['fields']['aggregatetimeestimate'])
-				print('Aggregate time estimate: ' + estimatetime)
-			else:
-				estimatetime = ''
-
-			# if (issue['fields']['aggregatetimespent']!=None):
-			# 	timespent = str(issue['fields']['aggregatetimespent'])
-			# 	print('Aggregate time spent: ' + timespent)
-			# else: timespent = ''
-
-			if (issue['fields']['duedate'] is not None):
-				duedate = issue['fields']['duedate']
-				print('Duedate: ', duedate)
-			else:
-				duedate = ''
-
-			if (issue['fields']['labels'] != []):
-				labels = issue['fields']['labels']
-				print('Labels: ', labels)
-			else:
-				labels = ''
-			print()
-
-			row_values = []
-			row_values.append(project)
-			row_values.append(backlog)
-			row_values.append(title)
-			row_values.append(description)
-			row_values.append(issueType)
-			# row_values.append(assignee)
-			# row_values.append(status)
-			row_values.append(estimatetime)
-			row_values.append(duedate)
-			# row_values.append(timespent)
-			row_values.append(','.join(labels))
-			row = ';'.join(row_values)
-			csv.write(row + ';\n')
-		csv.close()
-
 
 def upload_issues(filename):
 	if filename.endswith('.csv'):
@@ -209,7 +112,7 @@ def upload_issues(filename):
 		with open(filename, 'r') as csvfile:
 			csv_lines = list(csv.reader(csvfile, delimiter=';'))
 			for row in csv_lines[1:]:
-				logging.info('csv row:' + ";".join(row))
+				logging.info('csv row:' + ';'.join(row))
 				backlog_summary = row[1]
 				if (backlog_summary not in backlogs):
 					backlog_key = get_backlog_key_by_summary(backlog_summary)
@@ -225,34 +128,13 @@ def upload_issues(filename):
 					else:
 						backlogs[backlog_summary] = backlog_key
 				row[1] = backlogs[backlog_summary]
-				r = _post_issue(";".join(row))
+				r = _post_issue(';'.join(row))
 				if (r.status_code == 200 or r.status_code == 201):
 					logging.info('Subtask successfully created')
 				else:
 					logging.error('Subtask not created: ' + str(r))
 	else:
 		logging.error('file must be CSV')
-
-# def upload_backlogs(filename):
-# 	if filename.endswith('.csv'):
-# 		with open(filename, 'r') as csvfile:
-# 			csv_lines = list(csv.reader(csvfile, delimiter=';'))
-# 			backlog_ids = []
-# 			for row in csv_lines[1:]:
-# 				logging.info('csv row:' + ";".join(row))
-# 				r = _post_backlog(";".join(row))
-# 				if (r.status_code == 200 or r.status_code == 201):
-# 					logging.info('Backlog successfully created')
-# 					jsonResponse = json.loads(r.text)
-# 					backlog_ids.append(jsonResponse['key'])
-# 					logging.debug('JSON Response: ' + json.dumps(jsonResponse))
-# 				else:
-# 					logging.error('Issue not created: ' + str(r))
-# 			print()
-# 			print(*backlog_ids, sep = "\n")
-# 	else:
-# 		logging.error('file must be CSV')
-
 
 if __name__ == 'jiraCommands':
 	global _authenticatedHeader
