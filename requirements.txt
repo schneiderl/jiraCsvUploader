@@ -1,5 +1,10 @@
 Flask
-gunicorn
 flask_restful
 requests
 flask_cors
+json
+csv
+warnings
+configparser
+getpass
+logging
