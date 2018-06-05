@@ -24,9 +24,8 @@ global PROJECT
 # App needs to get endpoint too
 JIRA_URL = 'https://sapjira.wdf.sap.corp'
 
+
 # FRONT-END COMUNICATION METHODS
-
-
 @_app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
 def _parse_request():
 
@@ -65,11 +64,18 @@ def _authenticate():
 
 
 # BACK_END METHODS
-
-
 def _post_issue(issue_row):
-    project, subtaskOf, title, description, issueType, hours, priority, labels = issue_row.split(  # noqa
-        ';')
+    row = issue_row.split(';')
+
+    project = row[0]
+    subtaskOf = row[1]
+    title = row[2]
+    description = row[3]
+    issueType = row[4]
+    hours = row[5]
+    priority = row[6]
+    labels = row[7]
+
     data = {
         'fields': {
             'project': {
@@ -100,8 +106,17 @@ def _post_issue(issue_row):
 
 
 def _post_backlog(title):
-    data = {'fields': {'project': {'key': PROJECT}, 'summary': title, 'issuetype': {  # noqa
-        'id': '6'}}}  # noqa
+    data = {
+        'fields': {
+            'project': {
+                'key': PROJECT
+            },
+            'summary': title,
+            'issuetype': {
+                'id': '6'
+            }
+        }
+    }
     logging.debug('JSON sent:' + json.dumps(data))
     return requests.post(JIRA_URL + '/rest/api/2/issue',  # noqa
                       data=json.dumps(data), headers=_authenticatedHeader, verify=False)  # noqa
