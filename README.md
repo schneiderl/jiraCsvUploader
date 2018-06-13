@@ -8,3 +8,7 @@ Example usage in python interpreter:
 >>> import jiraUploader as J
 
 >>> J.upload_issues('issues.csv')
+
+
+
+p.s: do not use - in titles 

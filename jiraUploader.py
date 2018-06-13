@@ -6,6 +6,7 @@ from flask import abort
 from flask_cors import CORS
 import requests
 import json
+import csv
 import warnings
 import logging
 import configparser
@@ -74,7 +75,7 @@ def _post_issue(issue_row):
     issueType = row[4]
     hours = row[5]
     priority = row[6]
-    labels = row[7]
+    labels = row[7].replace(' ', '').split(',')
 
     data = {
         'fields': {
@@ -96,7 +97,7 @@ def _post_issue(issue_row):
             'priority': {
                 'id': priority
             },
-            'labels': [labels]
+            'labels': labels
         }
     }
 
@@ -152,7 +153,7 @@ def get_backlog_key_by_summary(title):
                 return issue['key']
         return None
     elif(r.status_code == 404):
-        logging.error('Issue not found')
+        logging.error('Backlog not found')
 
 # COMMAND LINE METHODS
 
@@ -185,6 +186,8 @@ def upload_issues(filename):
                     logging.info('Subtask successfully created')
                 else:
                     logging.error('Subtask not created: ' + str(r))
+                    jsonResponse = json.loads(r.text)
+                    logging.debug('JSON Response: ' + json.dumps(jsonResponse))  # noqa
     else:
         logging.error('file must be CSV')
 
