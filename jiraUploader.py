@@ -9,7 +9,6 @@ import json
 import csv
 import warnings
 import logging
-import configparser
 import getpass
 
 logging.basicConfig(level=logging.INFO)
@@ -21,8 +20,6 @@ port = int(os.getenv("PORT", 9099))
 global _authenticatedHeader
 global _data
 global JIRA_URL
-global PROJECT
-# App needs to get endpoint too
 JIRA_URL = 'https://sapjira.wdf.sap.corp'
 
 
@@ -106,11 +103,11 @@ def _post_issue(issue_row):
                       data=json.dumps(data), headers=_authenticatedHeader, verify=False)  # noqa
 
 
-def _post_backlog(title):
+def _post_backlog(project, title):
     data = {
         'fields': {
             'project': {
-                'key': PROJECT
+                'key': project
             },
             'summary': title,
             'issuetype': {
@@ -137,8 +134,8 @@ def _authenticate_header(auth_response):
     return {'Content-Type': 'application/json', 'Accept': 'application/json', 'cookie': sessionId}  # noqa
 
 
-def get_backlog_key_by_summary(title):
-    jql = 'project%20%3D%20' + PROJECT + '%20AND%20summary%20~%20"' + \
+def get_backlog_key_by_summary(project, title):
+    jql = 'project%20%3D%20' + project + '%20AND%20summary%20~%20"' + \
          title + '"%20AND%20issuetype%20%3D%20"Backlog%20Item"&fields='
     fields = 'summary'
 
@@ -166,21 +163,24 @@ def upload_issues(filename):
             csv_lines = list(csv.reader(csvfile, delimiter=';'))
             for row in csv_lines[1:]:
                 logging.info('csv row:' + ';'.join(row))
+                project = row[0]
                 backlog_summary = row[1]
-                if (backlog_summary not in backlogs):
-                    backlog_key = get_backlog_key_by_summary(backlog_summary)
+                keys = (project, backlog_summary)
+                if (keys not in backlogs):
+                    backlog_key = get_backlog_key_by_summary(project, backlog_summary)  # noqa
                     if (backlog_key is None):
-                        r = _post_backlog(backlog_summary)
+                        r = _post_backlog(project, backlog_summary)
                         if (r.status_code == 200 or r.status_code == 201):
                             logging.info('Backlog successfully created')
                             jsonResponse = json.loads(r.text)
-                            backlogs[backlog_summary] = jsonResponse['key']
+                            backlogs[keys] = jsonResponse['key']
                             logging.debug('JSON Response: ' + json.dumps(jsonResponse))  # noqa
                         else:
                             logging.error('Backlog not created: ' + str(r))
                     else:
-                        backlogs[backlog_summary] = backlog_key
-                row[1] = backlogs[backlog_summary]
+                        backlogs[keys] = backlog_key
+                # Replace Backlog Summary with key
+                row[1] = backlogs[keys]
                 r = _post_issue(';'.join(row))
                 if (r.status_code == 200 or r.status_code == 201):
                     logging.info('Subtask successfully created')
@@ -203,20 +203,8 @@ def _auth():
 
 
 def _get_config():
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    global JIRA_URL
-    global PROJECT
-    username = config.get('jira', 'username')
-    password = config.get('jira', 'password')
-    PROJECT = config.get('jira', 'project')
-    JIRA_URL = config.get('endpoints', 'jira')
-    if (username == ''):
-        username = str(input('Username:'))
-    if (password == ''):
-        password = str(getpass.getpass('Password:'))
-    if (PROJECT == ''):
-        PROJECT = input('Project:')
+    username = str(input('Username:'))
+    password = str(getpass.getpass('Password:'))
     return username, password
 
 
