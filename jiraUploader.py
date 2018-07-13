@@ -39,7 +39,7 @@ def _parse_request():
 
         lines = read.splitlines()  # no good
         for row in lines[1:]:
-            logging.info(row)
+            logging.info('row: ' + row)
             r = _post_issue(row)
             logging.info(r)
     else:
@@ -135,21 +135,20 @@ def _authenticate_header(auth_response):
 
 
 def get_backlog_key_by_summary(project, title):
-    jql = 'project%20%3D%20' + project + '%20AND%20summary%20~%20"' + \
-         title + '"%20AND%20issuetype%20%3D%20"Backlog%20Item"&fields='
+    jql = 'project%20%3D%20' + project + '%20AND%20summary%20~%20"' + title + '"%20AND%20issuetype%20%3D%20"Backlog%20Item"&fields='  # noqa
     fields = 'summary'
 
-    r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql + '&fields=' +
-                     fields, data=json.dumps(_data), headers=_authenticatedHeader, verify=False)  # noqa
+    r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql + '&fields=' + fields, data=json.dumps(_data), headers=_authenticatedHeader, verify=False)  # noqa
     if (r.status_code == 200):
         issuesJson = json.loads(r.text)
-        logging.debug(json.dumps(issuesJson))
+        logging.debug('Backlogs found:' + json.dumps(issuesJson))
         for issue in issuesJson['issues']:
             jira_title = issue['fields']['summary']
             if title == jira_title:
+                logging.debug('Backlog matched:' + json.dumps(issue['key']))
                 return issue['key']
         return None
-    elif(r.status_code == 404):
+    else:
         logging.error('Backlog not found')
 
 # COMMAND LINE METHODS
@@ -179,6 +178,9 @@ def upload_issues(filename):
                             logging.error('Backlog not created: ' + str(r))
                     else:
                         backlogs[keys] = backlog_key
+                else:
+                    logging.debug('Backlog buffered')
+
                 # Replace Backlog Summary with key
                 row[1] = backlogs[keys]
                 r = _post_issue(';'.join(row))
