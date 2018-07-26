@@ -10,6 +10,7 @@ import csv
 import warnings
 import logging
 import getpass
+import urllib
 
 logging.basicConfig(level=logging.INFO)
 _app = Flask(__name__)
@@ -135,10 +136,11 @@ def _authenticate_header(auth_response):
 
 
 def get_backlog_key_by_summary(project, title):
-    jql = 'project%20%3D%20' + project + '%20AND%20summary%20~%20"' + title + '"%20AND%20issuetype%20%3D%20"Backlog%20Item"&fields='  # noqa
+    jql = 'project= "' + project + '"AND summary~"' + title + '"AND issuetype="Backlog Item"'  # noqa
     fields = 'summary'
+    jql = urllib.parse.quote(jql) + '&fields=' + fields
 
-    r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql + '&fields=' + fields, data=json.dumps(_data), headers=_authenticatedHeader, verify=False)  # noqa
+    r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql , data=json.dumps(_data), headers=_authenticatedHeader, verify=False)  # noqa
     if (r.status_code == 200):
         issuesJson = json.loads(r.text)
         logging.debug('Backlogs found:' + json.dumps(issuesJson))
