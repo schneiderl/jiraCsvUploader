@@ -5,6 +5,10 @@ In order to make it run locally you may copy configTemplate.ini into file config
 
 Example usage in python interpreter:
 
->> import jiraCommands as J
+>>> import jiraUploader as J
 
->> J.upload_issues('issues.csv')
+>>> J.upload_issues('issues.csv')
+
+
+
+p.s: do not use - in titles 
