@@ -34,7 +34,8 @@ def upload_issues(filename, username, password):
         data = {}
         data['tasks'] = []
         for row in csv_lines[1:]:
-            # noqa row(Project, Backlog; Summary, Description, IssueType, Hours, Priority, Labels)
+            # row(Project, Backlog; Summary, Description,
+            #     IssueType, Hours, Priority, Labels)
             task = {}
             task['fields'] = {}
             task['fields']['project'] = {}
@@ -56,7 +57,10 @@ def upload_issues(filename, username, password):
             task['fields']['labels'] = labels
             data['tasks'].append(task)
         logging.debug(' Json sent:' + json.dumps(data))
-        response = requests.post('http://localhost:9099/api/createtasks', auth=(username, password), data=json.dumps(data), headers=headers, verify=False)  # noqa
+        response = requests.post('http://localhost:9099/api/createtasks',
+                                 auth=(username, password),
+                                 data=json.dumps(data),
+                                 headers=headers, verify=False)
         print(response.text)
 
 

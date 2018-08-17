@@ -27,13 +27,14 @@ JIRA_URL = 'https://sapjira.wdf.sap.corp'
 def _parse_request():
 
     if request.method == 'OPTIONS':
-        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+        return json.dumps({'success': True}), 200, \
+                          {'ContentType': 'application/json'}
 
     try:
         authenticated_header = _authorize()
     except ConnectionError as err:
         response = {'Authentication': False, 'Jira Status Code': err.args}
-        return json.dumps(response), 401, {'ContentType': 'application/json'}  # noqa
+        return json.dumps(response), 401, {'ContentType': 'application/json'}
     # read = request.data.decode('utf-8')
     request_json = request.get_json()  # TODO: fix encoding/decoding
     logging.debug('JSON read:' + json.dumps(request_json))
@@ -41,9 +42,10 @@ def _parse_request():
         create_issues(request_json, authenticated_header)
     except ConnectionError as err:
         response = {'Tasks Creation': False, 'Jira Status Code': err.args}
-        return json.dumps(response), 999, {'ContentType': 'application/json'}  # noqa
+        return json.dumps(response), 999, {'ContentType': 'application/json'}
 
-    return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}  # noqa
+    return json.dumps({'success': True}), 200, {'ContentType':
+                                                'application/json'}
 
 
 def _authorize():
@@ -61,14 +63,16 @@ def _post_auth(username, password):
     headers = {'Content-Type': 'application/json',
                'Accept': 'application/json'}
     data = {'username': username, 'password': password}
-    return requests.post(JIRA_URL + '/rest/auth/1/session', data=json.dumps(data), headers=headers, verify=False)  # noqa
+    return requests.post(JIRA_URL + '/rest/auth/1/session',
+                         data=json.dumps(data), headers=headers, verify=False)
 
 
 def _authenticate_header(auth_response):
     sessionJson = json.loads(auth_response.text)
     sessionId = sessionJson['session']['name'] + \
         '=' + sessionJson['session']['value']
-    return {'Content-Type': 'application/json', 'Accept': 'application/json', 'cookie': sessionId}  # noqa
+    return {'Content-Type': 'application/json',
+            'Accept': 'application/json', 'cookie': sessionId}
 
 
 def create_issues(tasks_json, auth):
@@ -80,14 +84,14 @@ def create_issues(tasks_json, auth):
         backlogs = {}
 
         if (keys not in backlogs):
-            backlog_key = get_backlog_key_by_summary(project, parent, auth)  # noqa
+            backlog_key = get_backlog_key_by_summary(project, parent, auth)
             if (backlog_key is None):
                 r = _post_backlog(project, parent, auth)
                 if (r.status_code == 200 or r.status_code == 201):
                     logging.info('Backlog successfully created')
                     jsonResponse = json.loads(r.text)
                     backlogs[keys] = jsonResponse['key']
-                    logging.debug('JSON Response: ' + json.dumps(jsonResponse))  # noqa
+                    logging.debug('JSON Response: ' + json.dumps(jsonResponse))
                 else:
                     logging.error('Backlog not created: ' + str(r))
                     raise ConnectionError('Backlog not created')
@@ -104,18 +108,20 @@ def create_issues(tasks_json, auth):
         else:
             logging.error('Subtask not created: ' + str(r))
             jsonResponse = json.loads(r.text)
-            logging.debug('JSON Response: ' + json.dumps(jsonResponse))  # noqa
+            logging.debug('JSON Response: ' + json.dumps(jsonResponse))
             raise ConnectionError('Task not created')
 
     return
 
 
 def get_backlog_key_by_summary(project, title, auth):
-    jql = 'project= "' + project + '"AND summary~"' + title + '"AND issuetype="Backlog Item" AND status in ("Open", "In Progress", "Reopened")'  # noqa
+    jql = 'project= "' + project + '"AND summary~"' + title + '"AND issuetype='
+    jql += '"Backlog Item" AND status in ("Open", "In Progress", "Reopened")'
     fields = 'summary'
     jql = urllib.parse.quote(jql) + '&fields=' + fields
 
-    r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql, headers=auth, verify=False)  # noqa
+    r = requests.get(JIRA_URL + '/rest/api/2/search?jql=' + jql,
+                     headers=auth, verify=False)
     if (r.status_code == 200):
         issuesJson = json.loads(r.text)
         logging.debug('Backlogs found:' + json.dumps(issuesJson))
@@ -142,18 +148,20 @@ def _post_backlog(project, title, auth):
         }
     }
     logging.debug('JSON "create backlog":' + json.dumps(data))
-    return requests.post(JIRA_URL + '/rest/api/2/issue',  # noqa
-                      data=json.dumps(data), headers=auth, verify=False)  # noqa
+    return requests.post(JIRA_URL + '/rest/api/2/issue',
+                         data=json.dumps(data), headers=auth, verify=False)
 
 
 def _post_issue(task_json, auth):
     logging.debug('JSON "create issue":' + json.dumps(task_json))
-    return requests.post(JIRA_URL + '/rest/api/2/issue', data=json.dumps(task_json), headers=auth, verify=False)  # noqa
+    return requests.post(JIRA_URL + '/rest/api/2/issue',
+                         data=json.dumps(task_json),
+                         headers=auth, verify=False)
 
 
 def get_issue_by_key(key, auth):
     r = requests.get(JIRA_URL + '/rest/api/2/issue/' + key,
-                     headers=auth, verify=False)  # noqa
+                     headers=auth, verify=False)
     if (r.status_code == 200):
         issueJson = json.loads(r.text)
         title = issueJson['fields']['summary']
