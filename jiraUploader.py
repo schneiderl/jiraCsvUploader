@@ -20,7 +20,7 @@ CORS(_app)
 warnings.filterwarnings("ignore")  # just during prototype phase
 port = int(os.getenv("PORT", 9099))
 global JIRA_URL
-JIRA_URL = 'https://sapjira.wdf.sap.corp'
+JIRA_URL = 'https://jira.com'
 
 
 @_app.route('/api/createtasks', methods=['POST', 'OPTIONS'])
